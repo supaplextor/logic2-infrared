@@ -26,7 +26,11 @@ The extension will appear as **"IR Remote Decoder"** in the High Level Analyzers
 ## Usage
 
 1. Capture an IR signal on a digital channel.
-2. Add the **IR Remote Decoder** HLA on top of that channel.
+2. Add the **IR Remote Decoder** HLA on top of that channel:
+   - Open the **Analyzers** panel (the waveform icon in the left sidebar).
+   - Click **+ Add Analyzer**.
+   - Scroll to (or search for) **IR Remote Decoder** under *High Level Analyzers*.
+   - In the dialog that appears, set **Input Analyzer** to the digital channel that carries your IR signal, then click **Save**.
 3. Configure the two settings:
    - **gap_threshold_ms** – silence duration (in ms) that marks the end of one IR frame (default: 10 ms).
    - **active_low** – set to **Yes** for standard TSOP/IR demodulator receivers (output is active-LOW, idle = HIGH); set to **No** for active-HIGH signals.
