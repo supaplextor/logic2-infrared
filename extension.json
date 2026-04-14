@@ -1,0 +1,13 @@
+{
+    "version": "0.0.1",
+    "apiVersion": "1.0.0",
+    "author": "",
+    "name": "IR Remote Decoder",
+    "description": "Decodes IR remote-control signals using IRremoteESP8266-compatible protocol detection. Supports NEC, Samsung, Sony SIRC, LG, JVC, Panasonic/Kaseikyo, Sharp and RC5.",
+    "extensions": {
+        "IR Remote Decoder": {
+            "type": "HighLevelAnalyzer",
+            "entryPoint": "HighLevelAnalyzer"
+        }
+    }
+}
