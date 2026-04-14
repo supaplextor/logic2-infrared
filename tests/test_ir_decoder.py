@@ -22,6 +22,7 @@ from ir_decoder import (
     decode_panasonic,
     decode_rc5,
     decode_samsung,
+    decode_samsung36,
     decode_sharp,
     decode_sony,
     match_us,
@@ -62,6 +63,11 @@ def make_necx_raw(address: int, command: int) -> list:
 def make_samsung_raw(address: int, command: int) -> list:
     value = (address & 0xFFFF) | ((command & 0xFFFF) << 16)
     return _pdm_frame(4500, 4500, 560, 1690, 560, 560, value, 32)
+
+
+def make_samsung36_raw(address: int, command: int) -> list:
+    value = (address & 0xFFFF) | ((command & 0xFFFFF) << 16)
+    return _pdm_frame(4500, 4500, 560, 1690, 560, 560, value, 36)
 
 
 def make_sony_raw(address: int, command: int, bits: int = 12) -> list:
@@ -272,6 +278,62 @@ class TestSamsung:
 
 
 # ---------------------------------------------------------------------------
+# Samsung36
+# ---------------------------------------------------------------------------
+
+class TestSamsung36:
+    def test_basic_decode(self):
+        raw = make_samsung36_raw(0xE0E0, 0xA40BF)
+        r = decode_samsung36(raw)
+        assert r is not None
+        assert r.protocol == "SAMSUNG36"
+        assert r.manufacturer == "Samsung"
+        assert r.address == 0xE0E0
+        assert r.command == 0xA40BF
+        assert r.bits == 36
+
+    def test_address_and_command_fields(self):
+        raw = make_samsung36_raw(0x1234, 0xABCDE)
+        r = decode_samsung36(raw)
+        assert r is not None
+        assert r.address == 0x1234
+        assert r.command == 0xABCDE
+
+    def test_value_encoding(self):
+        raw = make_samsung36_raw(0x0001, 0x00001)
+        r = decode_samsung36(raw)
+        assert r is not None
+        assert (r.value & 0xFFFF) == 0x0001
+        assert ((r.value >> 16) & 0xFFFFF) == 0x00001
+
+    def test_rejects_samsung32_frame(self):
+        # Samsung32 frame has only 67 raw entries, fewer than the 75 required
+        raw = make_samsung_raw(0xE0E0, 0x40BF)
+        assert len(raw) == 67
+        assert decode_samsung36(raw) is None
+
+    def test_samsung32_not_misidentified(self):
+        # The dispatcher must return SAMSUNG (32-bit) for a 32-bit frame
+        raw = make_samsung_raw(0xE0E0, 0x40BF)
+        r = decode_ir_raw(raw)
+        assert r is not None
+        assert r.protocol == "SAMSUNG"
+
+    def test_wrong_header_mark(self):
+        raw = make_samsung36_raw(0xE0E0, 0xA40BF)
+        raw[0] = 9000
+        assert decode_samsung36(raw) is None
+
+    def test_wrong_header_space(self):
+        raw = make_samsung36_raw(0xE0E0, 0xA40BF)
+        raw[1] = 1000
+        assert decode_samsung36(raw) is None
+
+    def test_too_short(self):
+        assert decode_samsung36([4500, 4500]) is None
+
+
+# ---------------------------------------------------------------------------
 # Sony SIRC
 # ---------------------------------------------------------------------------
 
@@ -468,6 +530,12 @@ class TestDecodeIRRaw:
         r = decode_ir_raw(raw)
         assert r is not None
         assert r.protocol == "SAMSUNG"
+
+    def test_dispatches_samsung36(self):
+        raw = make_samsung36_raw(0xE0E0, 0xA40BF)
+        r = decode_ir_raw(raw)
+        assert r is not None
+        assert r.protocol == "SAMSUNG36"
 
     def test_dispatches_sony(self):
         raw = make_sony_raw(0x01, 0x15, bits=12)

@@ -4,7 +4,7 @@ ir_decoder.py — IRremoteESP8266-compatible IR protocol decoder.
 Decodes raw IR timing sequences (alternating mark/space durations in
 microseconds) into structured decode results with manufacturer name and
 data payload.  Supported protocols mirror the IRremoteESP8266 library:
-  NEC / NEC Extended, Samsung, Sony SIRC (12/15/20-bit), LG, JVC,
+  NEC / NEC Extended, Samsung, Samsung36, Sony SIRC (12/15/20-bit), LG, JVC,
   Panasonic / Kaseikyo, Sharp, RC5.
 """
 
@@ -211,6 +211,51 @@ def decode_samsung(raw: List[float]) -> Optional[DecodeResult]:
 
     return DecodeResult(
         protocol="SAMSUNG",
+        manufacturer="Samsung",
+        value=value,
+        address=address,
+        command=command,
+        bits=NBITS,
+        raw_count=len(raw),
+    )
+
+
+def decode_samsung36(raw: List[float]) -> Optional[DecodeResult]:
+    """Decode Samsung36 protocol (36-bit variant used by newer Samsung devices).
+
+    Frame structure:
+      Header : 4500 mark + 4500 space
+      36 bits LSB-first : addr(16) + cmd(20)
+      Bit    : 560 mark + 1690 space (1) / 560 space (0)
+      Stop   : 560 mark
+    """
+    HDR_MARK   = 4500
+    HDR_SPACE  = 4500
+    BIT_MARK   = 560
+    ONE_SPACE  = 1690
+    ZERO_SPACE = 560
+    NBITS      = 36
+
+    # header(2) + 36 bit-pairs(72) + stop(1) = 75
+    if len(raw) < 75:
+        return None
+    if not match_us(raw[0], HDR_MARK):
+        return None
+    if not match_us(raw[1], HDR_SPACE):
+        return None
+
+    value = _decode_pdm_bits(raw, 2, NBITS, BIT_MARK, ONE_SPACE, ZERO_SPACE)
+    if value is None:
+        return None
+
+    if not match_us(raw[74], BIT_MARK):
+        return None
+
+    address = value & 0xFFFF
+    command = (value >> 16) & 0xFFFFF
+
+    return DecodeResult(
+        protocol="SAMSUNG36",
         manufacturer="Samsung",
         value=value,
         address=address,
@@ -554,6 +599,7 @@ def decode_rc5(raw: List[float]) -> Optional[DecodeResult]:
 
 _DECODERS = [
     decode_nec,
+    decode_samsung36,
     decode_samsung,
     decode_sony,
     decode_lg,
