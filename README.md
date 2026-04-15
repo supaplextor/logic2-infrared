@@ -7,7 +7,7 @@ A [Logic 2](https://www.saleae.com/downloads/) High Level Analyzer (HLA) extensi
 | Protocol | Manufacturer examples | Bits |
 |---|---|---|
 | NEC / NEC Extended | Generic remotes, Apple | 32 |
-| Samsung | Samsung TVs & appliances | 32 |
+| Samsung | Samsung TVs & appliances | 32 / 36 |
 | Sony SIRC 12/15/20 | Sony AV equipment | 12 / 15 / 20 |
 | LG | LG TVs & appliances | 28 |
 | JVC | JVC AV equipment | 16 |
